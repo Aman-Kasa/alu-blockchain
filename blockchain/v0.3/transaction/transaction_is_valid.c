@@ -12,8 +12,36 @@ int match_unspent(llist_node_t node, void *arg)
 	unspent_tx_out_t *utxo = node;
 	tx_in_t *txi = arg;
 
-	if (!memcmp(txi->tx_out_hash, utxo->out.hash, SHA256_DIGEST_LENGTH))
+	if (!memcmp(txi->block_hash, utxo->block_hash, SHA256_DIGEST_LENGTH) &&
+		!memcmp(txi->tx_id, utxo->tx_id, SHA256_DIGEST_LENGTH) &&
+		!memcmp(txi->tx_out_hash, utxo->out.hash, SHA256_DIGEST_LENGTH))
 		return (1);
+	return (0);
+}
+
+/**
+ * is_double_spend - checks if an earlier input spends the same output
+ *
+ * Description: block_hash, tx_id and tx_out_hash are the first 96
+ * contiguous bytes of tx_in_t, so they are compared in one go
+ *
+ * @inputs: list of the transaction inputs
+ * @txi: current input
+ * @idx: index of @txi in @inputs
+ * Return: 1 if the output was already spent in this transaction, else 0
+ */
+static int is_double_spend(llist_t *inputs, tx_in_t const *txi,
+	unsigned int idx)
+{
+	unsigned int i;
+	tx_in_t *prev;
+
+	for (i = 0; i < idx; i++)
+	{
+		prev = llist_get_node_at(inputs, i);
+		if (prev && !memcmp(prev, txi, SHA256_DIGEST_LENGTH * 3))
+			return (1);
+	}
 	return (0);
 }
 
@@ -32,7 +60,7 @@ int check_inputs(llist_node_t node, unsigned int idx, void *arg)
 		llist_find_node(visitor->all_unspent, match_unspent, txi);
 	EC_KEY *key;
 
-	if (!utxo)
+	if (!utxo || is_double_spend(visitor->tx->inputs, txi, idx))
 	{
 		dprintf(2, "check_inputs: utxo NULL\n");
 		visitor->valid = 0;
@@ -49,7 +77,6 @@ int check_inputs(llist_node_t node, unsigned int idx, void *arg)
 	EC_KEY_free(key);
 	visitor->in_amount += utxo->out.amount;
 	return (0);
-	(void)idx;
 }
 
 /**
@@ -81,7 +108,8 @@ int transaction_is_valid(transaction_t const *transaction,
 	uint8_t hash_buf[SHA256_DIGEST_LENGTH];
 	validation_vistor_t visitor = {0};
 
-	if (!transaction || !all_unspent)
+	if (!transaction || !all_unspent || !transaction->inputs ||
+		!transaction->outputs)
 		return (0);
 	visitor.tx = transaction;
 	visitor.all_unspent = all_unspent;

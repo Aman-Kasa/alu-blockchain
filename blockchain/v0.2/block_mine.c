@@ -9,6 +9,9 @@ void block_mine(block_t *block)
 	uint64_t nonce = 0;
 	uint8_t hash[SHA256_DIGEST_LENGTH];
 
+	if (!block)
+		return;
+
 	while (1)
 	{
 		block->info.nonce = nonce;

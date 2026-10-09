@@ -68,6 +68,6 @@ int block_serialize(llist_node_t node_ptr, int idx, void *arg)
 	fwrite((void *)&block->data.len, sizeof(block->data.len), 1, file);
 	fwrite(block->data.buffer, block->data.len, 1, file);
 	fwrite(block->hash, sizeof(block->hash), 1, file);
-	return (sizeof(*block));
+	return (0); /* non-zero would stop llist_for_each early */
 }
 

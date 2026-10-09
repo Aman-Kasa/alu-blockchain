@@ -7,7 +7,6 @@
  * main - Entry point
  *
  * Return: EXIT_SUCCESS or EXIT_FAILURE
- * Author: Frank Onyema Orji
  */
 int main(void)
 {
@@ -15,16 +14,16 @@ int main(void)
 	block_t *first, *block;
 
 	blockchain = blockchain_create();
-	first = llist_get_head(blockcahin->chain);
+	first = llist_get_head(blockchain->chain);
 
 	block = block_create(first, (int8_t *)"Holberton", 9);
-	block_hash(block, block->);
+	block_hash(block, block->hash);
 	llist_add_node(blockchain->chain, block, ADD_NODE_REAR);
 
 	if (block_is_valid(first, NULL) != 0 ||
-			block_is_valid(block, first) != 0)
+	block_is_valid(block, first) != 0)
 	{
-		fprint(stderr, "Block invalid\n");
+		fprintf(stderr, "Block invalid\n");
 		return (EXIT_FAILURE);
 	}
 	printf("Block is valid\n");
@@ -33,4 +32,3 @@ int main(void)
 
 	return (EXIT_SUCCESS);
 }
-

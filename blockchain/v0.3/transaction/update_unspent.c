@@ -5,15 +5,18 @@
 /**
  * find_unspent - finds unspent matching txo
  * @node: current node, unspent_txo_t
- * @arg: txo id
+ * @arg: transaction input (tx_in_t *) spending the output
  * Return: 0 if continue else 1.
  * Author: Frank Onyema Orji.
  */
 int find_unspent(llist_node_t node, void *arg)
 {
 	unspent_tx_out_t *utxo = node;
+	tx_in_t *txi = arg;
 
-	if (!memcmp(arg, utxo->out.hash, SHA256_DIGEST_LENGTH))
+	if (!memcmp(txi->block_hash, utxo->block_hash, SHA256_DIGEST_LENGTH) &&
+		!memcmp(txi->tx_id, utxo->tx_id, SHA256_DIGEST_LENGTH) &&
+		!memcmp(txi->tx_out_hash, utxo->out.hash, SHA256_DIGEST_LENGTH))
 		return (1);
 	return (0);
 }
@@ -30,7 +33,7 @@ int foreach_input(llist_node_t node, unsigned int idx, void *_args)
 	void **args = _args;
 	tx_in_t *txi = node;
 
-	llist_remove_node(args[0], find_unspent, txi->tx_out_hash, 1, free);
+	llist_remove_node(args[0], find_unspent, txi, 1, free);
 	return (0);
 	(void)idx;
 	(void)txi;

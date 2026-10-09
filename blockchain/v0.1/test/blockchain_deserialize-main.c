@@ -4,14 +4,17 @@
 
 #include "blockchain.h"
 
+void _blockchain_print_brief(blockchain_t const *blockchain);
+
 /**
  * main - Entry point
  *
  * Return: EXIT_SUCCESS or EXIT_FAILURE
- * Author: Frank Onyema Orji
  */
 int main(void)
 {
+	blockchain_t *blockchain;
+
 	blockchain = blockchain_deserialize("save.hblk");
 
 	_blockchain_print_brief(blockchain);
@@ -19,4 +22,3 @@ int main(void)
 
 	return (EXIT_SUCCESS);
 }
-
