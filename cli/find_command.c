@@ -1,40 +1,22 @@
 #include "cli.h"
 
 /**
- * cli_wallet_save - program that saves the wallet to a specified file
+ * find_command - looks up a CLI command by its name
  *
- * @state: a pointer to the state_t structure containing
- *         the command line arguments and wallet state
+ * @name: name typed by the user (e.g. "send", "wallet_load")
  *
- * Return: an integer status code indicating the outcome of the save operation,
- *         EXIT_SUCCESS on success,
- *         EXIT_FAILURE on failure
+ * Return: pointer to the matching command, or NULL if there is none
  */
-
-int cli_wallet_save(state_t *state)
+command_t const *find_command(char const *name)
 {
-	if (state->argc > 2)
+	command_t const *command = get_commands();
+
+	if (!name)
+		return (NULL);
+	for (; command->name; command++)
 	{
-		fprintf(stderr, "%s: too many arguments\n", state->argv[0]);
-		return ((state->status = 2));
+		if (strcmp(command->name, name) == 0)
+			return (command);
 	}
-
-	if (state->argc < 2)
-	{
-		fprintf(stderr, "%s: too few arguments\n", state->argv[0]);
-		return ((state->status = 2));
-	}
-
-	if (!ec_save(state->wallet, state->argv[1]))
-	{
-		fprintf(stdout, "Failed to save wallet to %s\n",
-			state->argv[1]);
-		return ((state->status = EXIT_FAILURE));
-	}
-
-	fprintf(stdout, "Saved wallet to %s\n",
-		state->argv[1]);
-
-	return ((state->status = EXIT_SUCCESS));
+	return (NULL);
 }
-

@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include <llist.h>
 
@@ -22,6 +23,10 @@
 #define BLANK " \t\n"
 
 #define PROMPT "> "
+
+#define ADDRESS_NAME "address"
+#define ADDRESS_HELP "address"
+#define ADDRESS_DESC "Display the public address of the current wallet."
 
 #define EXIT_NAME "exit"
 #define EXIT_HELP "exit"
@@ -87,6 +92,20 @@ typedef struct state_s
 } state_t;
 
 
+/**
+ * struct coins_s - running totals while scanning unspent outputs
+ *
+ * @total: coins held by everybody (total supply in circulation)
+ * @mine: coins that belong to the current wallet
+ * @pub: public key of the current wallet
+ */
+typedef struct coins_s
+{
+	unsigned long int total;
+	unsigned long int mine;
+	uint8_t pub[EC_PUB_LEN];
+} coins_t;
+
 typedef int (*command_func_t)(state_t *);
 
 
@@ -109,6 +128,9 @@ typedef struct command_s
 
 
 
+/* cli_address.c */
+int cli_address(state_t *state);
+
 /* cli_exit.c */
 int cli_exit(state_t *state);
 
@@ -116,26 +138,15 @@ int cli_exit(state_t *state);
 int cli_help(state_t *state);
 
 /* cli_info.c */
-static int sum_unspent_amounts(void *node,
-			       unsigned int idx __attribute__((unused)), void *arg);
 int cli_info(state_t *state);
 
 /* cli_load.c */
 int cli_load(state_t *state);
 
 /* cli_mine.c */
-static int transaction_is_invalid(llist_node_t node, void *arg);
-static int add_transaction(llist_node_t node,
-			   unsigned int idx __attribute__((unused)), void *arg);
-static unspent_tx_out_t *update_utxo(state_t *state, block_t *block,
-				     transaction_t *coinbase_tx);
-static int cli_mine_process(state_t *state, block_t *block,
-			    block_t *prev_block, transaction_t *coinbase_tx);
 int cli_mine(state_t *state);
 
 /* cli_save.c */
-static int handle_transaction_send(state_t *state, uint32_t amount,
-				   uint8_t pub[EC_PUB_LEN]);
 int cli_save(state_t *state);
 
 /* cli_send.c */

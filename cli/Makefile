@@ -2,7 +2,9 @@
 CC = gcc
 
 # Compiler flags: enable all warnings, treat warnings as errors, enable extra warnings, enforce standards compliance
-CFLAGS = -Wall -Werror -Wextra -pedantic -I.
+CFLAGS = -Wall -Werror -Wextra -pedantic -Wno-deprecated-declarations -I. \
+	-I../crypto -I../blockchain/v0.3 -I../blockchain/v0.3/transaction \
+	-I../blockchain/v0.3/provided
 
 # Command to remove files
 RM = rm -f
@@ -23,7 +25,7 @@ SRC = $(wildcard *.c)
 OBJ = $(patsubst %.c,%.o,$(SRC))
 
 # Phony targets for managing commands
-.PHONY: all clean distclean oclean tags cli
+.PHONY: all clean distclean oclean tags cli libs
 
 # Default target: build the CLI application
 all: cli
@@ -44,7 +46,12 @@ oclean:
 tags:
 	$(CTAGS) -f $(TAGS) -R
 
+# Build the two libraries the CLI depends on
+libs:
+	$(MAKE) -C ../crypto libhblk_crypto.a
+	$(MAKE) -C ../blockchain/v0.3 libhblk_blockchain.a
+
 # Link object files into a single executable
-cli: $(OBJ)
-	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+cli: libs $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LIBS)
 

@@ -10,7 +10,7 @@
  * @state: a pointer to the state_t structure containing blockchain
  *         information and command-line arguments
  *
- * Return : - EXIT_SUCCESS if the blockchain was successfully saved,
+ * Return: EXIT_SUCCESS if the blockchain was successfully saved,
  *          - otherwise EXIT_FAILURE after setting the state's status
  *            to 2 if there are too many or too few arguments
  */

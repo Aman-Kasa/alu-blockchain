@@ -7,14 +7,19 @@
  * this function checks if the correct number of arguments is provided
  * (exactly one argument for the blockchain file path);
  *
- * - if the number of arguments is incorrect, it prints an error message and returns an error code (2)
- * - if the arguments are correct, it attempts to deserialize the blockchain from the provided file path
- * - if deserialization fails, it prints a failure message, destroys any existing blockchain in the state,
+ * - if the number of arguments is incorrect, it prints an error message and
+ *   returns an error code (2)
+ * - if the arguments are correct, it attempts to deserialize the blockchain
+ *   from the provided file path
+ * - if deserialization fails, it prints a failure message, destroys any
+ *   existing blockchain in the state,
  *   and returns a failure status
- * - if successful, it updates the state with the new blockchain, prints a success message,
+ * - if successful, it updates the state with the new blockchain, prints a
+ *   success message,
  *   and returns a success status (EXIT_SUCCESS)
  *
- * @state: the current state of the CLI, including command-line arguments and the blockchain
+ * @state: the current state of the CLI, including command-line arguments and
+ *   the blockchain
  *
  * Return: the exit status indicating success (EXIT_SUCCESS),
  *         or failure (any non-zero value, typically 2 or EXIT_FAILURE)

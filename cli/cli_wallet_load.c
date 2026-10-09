@@ -7,7 +7,8 @@
  * this function attempts to load a wallet file from a specified path,
  * validates the number of input arguments, and handles errors appropriately
  *
- * @state: the state structure containing command-line arguments and program state
+ * @state: the state structure containing command-line arguments and program
+ *   state
  *
  * Return: an integer indicating the exit status,
  *         EXIT_SUCCESS on successful wallet load,

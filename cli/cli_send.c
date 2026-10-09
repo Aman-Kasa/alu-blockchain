@@ -1,123 +1,130 @@
 #include "cli.h"
 
 /**
- * handle_transaction_send - program that attempts to create
- * and send a transaction based on provided receiver's public key,
- * amount to transfer, and state information
+ * parse_amount - converts a command-line argument into a coin amount
  *
- * @state: the current state containing wallet, blockchain,
- *         and transaction pool information
- * @amount: the amount of cryptocurrency to send
- * @pub: the public key of the receiver, in bytes,
- *       used to identify the recipient
+ * @str: the argument typed by the user
+ * @amount: where to store the parsed amount
  *
- * Return: - EXIT_SUCCESS if the transaction is successfully
- *           added to the local transaction pool,
- *         - otherwise, returns EXIT_FAILURE
+ * Return: 1 if @str is a valid amount between 1 and UINT32_MAX, 0 otherwise
  */
-
-static int handle_transaction_send(state_t *state, uint32_t amount,
-				   uint8_t pub[EC_PUB_LEN])
+static int parse_amount(char const *str, uint32_t *amount)
 {
-	EC_KEY *receiver = NULL;
-	transaction_t *tx = NULL;
+	unsigned long int value;
+	char *endptr = NULL;
 
-	receiver = ec_from_pub(pub);
+	if (*str == '\0' || *str == '-')
+		return (0);
+	errno = 0;
+	value = strtoul(str, &endptr, 0);
+	if (errno != 0 || *endptr != '\0' || value == 0 || value > UINT32_MAX)
+		return (0);
+	*amount = (uint32_t)value;
+	return (1);
+}
+
+/**
+ * parse_address - converts a hex address into a raw public key
+ *
+ * @hex: the address typed by the user (130 hex characters)
+ * @pub: where to store the 65 bytes of the public key
+ *
+ * Description: each pair of hex characters is read into a temporary
+ * unsigned int, then stored as one byte, so nothing is ever written
+ * past the end of @pub
+ *
+ * Return: 1 on success, 0 if @hex is not a valid address
+ */
+static int parse_address(char const *hex, uint8_t pub[EC_PUB_LEN])
+{
+	unsigned int byte;
+	size_t i;
+
+	if (strlen(hex) != 2 * EC_PUB_LEN)
+		return (0);
+	for (i = 0; i < EC_PUB_LEN; i++)
+	{
+		if (!isxdigit((unsigned char)hex[2 * i]) ||
+			!isxdigit((unsigned char)hex[2 * i + 1]) ||
+			sscanf(hex + 2 * i, "%2x", &byte) != 1)
+			return (0);
+		pub[i] = (uint8_t)byte;
+	}
+	return (1);
+}
+
+/**
+ * queue_transaction - creates a transaction and adds it to the local pool
+ *
+ * @state: the CLI state (wallet, blockchain and transaction pool)
+ * @amount: the number of coins to send
+ * @pub: the public key of the receiver
+ *
+ * Return: EXIT_SUCCESS if the transaction was added to the pool,
+ *         EXIT_FAILURE otherwise
+ */
+static int queue_transaction(state_t *state, uint32_t amount,
+	uint8_t pub[EC_PUB_LEN])
+{
+	EC_KEY *receiver = ec_from_pub(pub);
+	transaction_t *tx = NULL;
+	char const *error = NULL;
 
 	if (!receiver)
-	{
-		fprintf(stderr, "%s: %s: invalid receiver public key\n",
-			state->argv[0], state->argv[1]);
-		return ((state->status = EXIT_FAILURE));
-	}
-
-	tx = transaction_create(
-		state->wallet, receiver, amount, state->blockchain->unspent);
-
-	if (!tx)
-	{
-		fprintf(stderr, "%s: failed to create transaction\n",
-			state->argv[0]);
-		EC_KEY_free(receiver);
-		return ((state->status = EXIT_FAILURE));
-	}
-	if (!transaction_is_valid(tx, state->blockchain->unspent))
-	{
-		fprintf(stderr, "%s: invalid transaction\n",
-			state->argv[0]);
-		EC_KEY_free(receiver);
-		transaction_destroy(tx);
-		return ((state->status = EXIT_FAILURE));
-	}
-	if (llist_add_node(state->tx_pool, tx, ADD_NODE_REAR) == -1)
-	{
-		fprintf(stdout, "Failed to add transaction to local transaction pool\n");
-		EC_KEY_free(receiver);
-		transaction_destroy(tx);
-		return ((state->status = EXIT_FAILURE));
-	}
-
-	fprintf(stdout, "Transaction added to local transaction pool\n");
+		error = "invalid receiver public key";
+	else
+		tx = transaction_create(state->wallet, receiver, amount,
+			state->blockchain->unspent);
+	if (!error && !tx)
+		error = "failed to create transaction (not enough coins?)";
+	else if (!error && !transaction_is_valid(tx, state->blockchain->unspent))
+		error = "invalid transaction";
+	else if (!error && llist_add_node(state->tx_pool, tx, ADD_NODE_REAR) == -1)
+		error = "failed to add transaction to local transaction pool";
 	EC_KEY_free(receiver);
-
+	if (error)
+	{
+		fprintf(stderr, "%s: %s\n", state->argv[0], error);
+		transaction_destroy(tx);
+		return ((state->status = EXIT_FAILURE));
+	}
+	fprintf(stdout, "Transaction added to local transaction pool\n");
 	return ((state->status = EXIT_SUCCESS));
 }
 
-
-
 /**
- * cli_send - program that processes the input parameters
- * to extract a public key and a transfer amount, then calls
- * 'handle_transaction_send' to attempt the transaction
+ * cli_send - sends coins from the current wallet to an address
+ *
+ * Description: usage is `send AMOUNT ADDRESS`. The transaction is put in
+ * the local transaction pool and confirmed by the next `mine`.
  *
  * @state: the current CLI state including arguments from the command line
  *
- * Return: 2 on argument errors, EXIT_FAILURE on processing errors,
- *         or the result of 'handle_transaction_send'
+ * Return: 2 on argument count errors, EXIT_FAILURE on invalid input or
+ *         failed transaction, EXIT_SUCCESS otherwise
  */
-
 int cli_send(state_t *state)
 {
 	uint8_t pub[EC_PUB_LEN] = {0};
-	size_t pub_index = 0;
-	unsigned long int amount = 0;
-	int nmatched = 0;
-	char *endptr = NULL;
+	uint32_t amount = 0;
 
-	if (state->argc > 3)
+	if (state->argc != 3)
 	{
-		fprintf(stderr, "%s: too many arguments\n", state->argv[0]);
+		fprintf(stderr, "%s: too %s arguments\n", state->argv[0],
+			state->argc > 3 ? "many" : "few");
 		return ((state->status = 2));
 	}
-	if (state->argc < 3)
-	{
-		fprintf(stderr, "%s: too few arguments\n", state->argv[0]);
-		return ((state->status = 2));
-	}
-
-	errno = 0;
-	amount = strtoul(state->argv[1], &endptr, 0);
-
-	if ((errno != 0 && (amount == 0 || amount == ULONG_MAX)) ||
-		(*state->argv[1] == '\0' || *endptr != '\0') ||
-		(amount > UINT32_MAX))
+	if (!parse_amount(state->argv[1], &amount))
 	{
 		fprintf(stderr, "%s: %s: invalid amount\n",
 			state->argv[0], state->argv[1]);
-
 		return ((state->status = EXIT_FAILURE));
 	}
-	while (pub_index < EC_PUB_LEN)
+	if (!parse_address(state->argv[2], pub))
 	{
-		nmatched = sscanf(
-			(state->argv[2] + (2 * pub_index)), "%02x",
-			(unsigned int *)(pub + pub_index));
-
-		if (nmatched == 0)
-			break;
-		pub_index += 1;
+		fprintf(stderr, "%s: invalid address (expected %d hex characters)\n",
+			state->argv[0], 2 * EC_PUB_LEN);
+		return ((state->status = EXIT_FAILURE));
 	}
-
-	return (handle_transaction_send(state, amount, pub));
+	return (queue_transaction(state, amount, pub));
 }
-

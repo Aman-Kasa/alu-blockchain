@@ -3,8 +3,10 @@
 /**
  * state_clear - program that clears the state of the application
  *
- * this function resets all elements of the state structure to their initial values;
- * it frees memory allocations and sets pointers to NULL to avoid dangling references
+ * this function resets all elements of the state structure to their initial
+ *   values;
+ * it frees memory allocations and sets pointers to NULL to avoid dangling
+ *   references
  *
  * @state: a pointer to the state structure to be cleared
  *

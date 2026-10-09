@@ -13,6 +13,7 @@
 command_t const *get_commands(void)
 {
 	static command_t commands[] = {
+		{cli_address, ADDRESS_NAME, ADDRESS_HELP, ADDRESS_DESC},
 		{cli_exit, EXIT_NAME, EXIT_HELP, EXIT_DESC},
 		{cli_help, HELP_NAME, HELP_HELP, HELP_DESC},
 		{cli_info, INFO_NAME, INFO_HELP, INFO_DESC},

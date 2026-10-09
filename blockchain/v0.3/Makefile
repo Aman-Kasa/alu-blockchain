@@ -11,7 +11,7 @@ SRC0 = blockchain_create.c blockchain_deserialize.c blockchain_destroy.c \
        transaction/transaction_hash.c transaction/transaction_is_valid.c \
        transaction/tx_in_create.c transaction/tx_in_sign.c \
        transaction/tx_out_create.c transaction/unspent_tx_out_create.c \
-       transaction/update_unspent.c
+       transaction/update_unspent.c provided/_endianness.c
 
 OBJ0 = $(SRC0:.c=.o)
 NAME0 = libhblk_blockchain.a

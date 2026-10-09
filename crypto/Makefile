@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Werror -Wextra -pedantic -std=gnu90 -ggdb3 -c
+CFLAGS = -Wall -Werror -Wextra -pedantic -std=gnu90 -ggdb3 -c -Wno-deprecated-declarations
 OBJDIR = targets/
 
 SRC0 = sha256.c ec_create.c ec_to_pub.c ec_from_pub.c ec_save.c ec_load.c ec_sign.c ec_verify.c
